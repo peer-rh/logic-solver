@@ -130,11 +130,164 @@ mod test {
                 (0, Operation::Input),
                 (1, Operation::Input),
                 (2, Operation::Input),
-                (3, Operation::Or(0, 2)),
-                (4, Operation::Or(1, 3)),
+                (3, Operation::Or(0, 1)),
+                (4, Operation::Or(3, 2)),
             ]),
         );
 
         test_graph(&graph, &graph_test);
     }
+
+    #[test]
+    fn test_associativity_and() {
+        let mut gc = GraphConstructor::new();
+
+        let a = gc.input();
+        let b = gc.input();
+        let c = gc.input();
+
+        let d = gc.l_and(b, c);
+        let out = gc.l_and(a, d);
+
+        let mut graph = Graph::generate(out, &gc.get_hashmap());
+        let graph_test = Graph::generate(
+            4,
+            &HashMap::from([
+                (0, Operation::Input),
+                (1, Operation::Input),
+                (2, Operation::Input),
+                (3, Operation::And(0, 1)),
+                (4, Operation::And(3, 2)),
+            ]),
+        );
+
+        test_graph(&graph, &graph_test);
+    }
+
+    #[test]
+    fn test_first_diff_law_shrink() {
+        let mut gc = GraphConstructor::new();
+
+        let a = gc.input();
+        let b = gc.input();
+        let c = gc.input();
+
+        let d = gc.l_and(a, b);
+        let e = gc.l_and(a, c);
+        let out = gc.l_or(d, e);
+
+        let mut graph = Graph::generate(out, &gc.get_hashmap());
+        let graph_test = Graph::generate(
+            4,
+            &HashMap::from([
+                (0, Operation::Input),
+                (1, Operation::Input),
+                (2, Operation::Input),
+                (3, Operation::Or(1, 2)),
+                (4, Operation::And(0, 3)),
+            ]),
+        );
+
+        test_graph(&graph, &graph_test);
+    }
+    #[test]
+    fn test_second_diff_law_shrink() {
+        let mut gc = GraphConstructor::new();
+
+        let a = gc.input();
+        let b = gc.input();
+        let c = gc.input();
+
+        let d = gc.l_or(a, b);
+        let e = gc.l_or(a, c);
+        let out = gc.l_and(d, e);
+
+        let mut graph = Graph::generate(out, &gc.get_hashmap());
+        let graph_test = Graph::generate(
+            4,
+            &HashMap::from([
+                (0, Operation::Input),
+                (1, Operation::Input),
+                (2, Operation::Input),
+                (3, Operation::And(1, 2)),
+                (4, Operation::Or(0, 3)),
+            ]),
+        );
+
+        test_graph(&graph, &graph_test);
+    }
+
+    #[test]
+    fn test_first_diff_law_expand() {
+        let mut gc = GraphConstructor::new();
+
+        let a = gc.input();
+        let b = gc.input();
+        let c = gc.input();
+
+        let d = gc.l_or(b, c);
+        let out = gc.l_and(a, d);
+
+        let mut graph = Graph::generate(out, &gc.get_hashmap());
+        let graph_test = Graph::generate(
+            5,
+            &HashMap::from([
+                (0, Operation::Input),
+                (1, Operation::Input),
+                (2, Operation::Input),
+                (3, Operation::And(0, 1)),
+                (4, Operation::And(0, 2)),
+                (5, Operation::Or(3, 4)),
+            ]),
+        );
+
+        test_graph(&graph, &graph_test);
+    }
+
+    #[test]
+    fn test_second_diff_law_expand() {
+        let mut gc = GraphConstructor::new();
+
+        let a = gc.input();
+        let b = gc.input();
+        let c = gc.input();
+
+        let d = gc.l_and(b, c);
+        let out = gc.l_or(a, d);
+
+        let mut graph = Graph::generate(out, &gc.get_hashmap());
+        let graph_test = Graph::generate(
+            5,
+            &HashMap::from([
+                (0, Operation::Input),
+                (1, Operation::Input),
+                (2, Operation::Input),
+                (3, Operation::Or(0, 1)),
+                (4, Operation::Or(0, 2)),
+                (5, Operation::And(3, 4)),
+            ]),
+        );
+
+        test_graph(&graph, &graph_test);
+    }
+
+    #[test]
+    fn test_double_negation() {
+        let mut gc = GraphConstructor::new();
+
+        let a = gc.input();
+
+        let out = gc.l_neg(a);
+        let out = gc.l_neg(out);
+
+        let mut graph = Graph::generate(out, &gc.get_hashmap());
+        let graph_test = Graph::generate(0, &HashMap::from([(0, Operation::Input)]));
+
+        test_graph(&graph, &graph_test);
+    }
+
+    // TODO: Test De Morgans Expand Or
+    // TODO: Test De Morgans Expand And
+    // TODO: Test De Morgans Shrink Or
+    // TODO: Test De Morgans Shrink And
 }

@@ -32,7 +32,7 @@ fn _ggh(
             }
         } else {
             // Add to in_nodes
-            in_nodes.push(idx);
+            in_nodes.push(nodes.len());
         }
         idx_conv.insert(idx, nodes.len());
         nodes.insert(nodes.len(), operation);
@@ -469,7 +469,7 @@ impl Graph {
                         node.change_input_nodes(*idx, b)
                     }
                     let new_out_node = if self.out_node == *idx {
-                        a
+                        b
                     } else {
                         self.out_node
                     };
