@@ -1,6 +1,14 @@
 use crate::{Graph, Idx, Operation};
 use std::collections::HashMap;
 
+macro_rules! add_to_solutions {
+    ($class:ident.$func:ident, $idx:expr, $all_solutions:ident) => {
+        if let Some(new_graph) = $class.$func($idx, &$class.nodes) {
+            $all_solutions.push(new_graph);
+        }
+    };
+}
+
 impl Graph {
     pub fn generate_variants(&self, levels: usize) -> Vec<Self> {
         if levels == 0 {
@@ -12,39 +20,17 @@ impl Graph {
         for i in self.keys_sorted.iter() {
             // Problem if one idx inside of the changes gets referenced by another variable
 
-            if let Some(new_graph) = self.gen_absorbition(i, &self.nodes) {
-                all_solutions.push(new_graph);
-            }
-            if let Some(new_graph) = self.gen_idempotence(i, &self.nodes) {
-                all_solutions.push(new_graph);
-            }
-            if let Some(new_graph) = self.gen_commutativity(i, &self.nodes) {
-                all_solutions.push(new_graph);
-            }
-            if let Some(new_graph) = self.gen_associativity(i, &self.nodes) {
-                all_solutions.push(new_graph);
-            }
-            if let Some(new_graph) = self.gen_first_distributive_law_shrink(i, &self.nodes) {
-                all_solutions.push(new_graph);
-            }
-            if let Some(new_graph) = self.gen_second_distributive_law_shrink(i, &self.nodes) {
-                all_solutions.push(new_graph);
-            }
-            if let Some(new_graph) = self.gen_first_distributive_law_expand(i, &self.nodes) {
-                all_solutions.push(new_graph);
-            }
-            if let Some(new_graph) = self.gen_second_distributive_law_expand(i, &self.nodes) {
-                all_solutions.push(new_graph);
-            }
-            if let Some(new_graph) = self.gen_double_negation(i, &self.nodes) {
-                all_solutions.push(new_graph);
-            }
-            if let Some(new_graph) = self.gen_de_morgan_rule_expand(i, &self.nodes) {
-                all_solutions.push(new_graph);
-            }
-            if let Some(new_graph) = self.gen_de_morgan_rule_shrink(i, &self.nodes) {
-                all_solutions.push(new_graph);
-            }
+            add_to_solutions!(self.gen_absorbition, i, all_solutions);
+            add_to_solutions!(self.gen_idempotence, i, all_solutions);
+            add_to_solutions!(self.gen_commutativity, i, all_solutions);
+            add_to_solutions!(self.gen_associativity, i, all_solutions);
+            add_to_solutions!(self.gen_first_distributive_law_expand, i, all_solutions);
+            add_to_solutions!(self.gen_second_distributive_law_expand, i, all_solutions);
+            add_to_solutions!(self.gen_first_distributive_law_shrink, i, all_solutions);
+            add_to_solutions!(self.gen_second_distributive_law_shrink, i, all_solutions);
+            add_to_solutions!(self.gen_double_negation, i, all_solutions);
+            add_to_solutions!(self.gen_de_morgan_rule_expand, i, all_solutions);
+            add_to_solutions!(self.gen_de_morgan_rule_shrink, i, all_solutions);
         }
 
         all_solutions.iter().for_each(|x| {
