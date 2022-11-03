@@ -1,116 +1,122 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
-use crate::{Node, Operation};
+use crate::Idx;
+use crate::Operation;
 
-use super::{Idx, Session};
-
-// static mut total_calls: usize = 0;
-// static mut total_not_contained: usize = 0;
+#[derive(Debug, PartialEq, Eq)]
 
 pub struct Graph {
-    nodes: Vec<Idx>,
-    out_node: Idx,
     in_nodes: Vec<Idx>,
+    nodes: HashMap<Idx, Operation>,
+    keys_sorted: Vec<Idx>,
+    out_node: Idx,
 }
 
-// NOTE: This call takes long and isn't necessary as Index is automaticlly sorted
-//
-fn _dfs(idx: &Idx, nodes: &mut HashSet<Idx>, in_nodes: &mut HashSet<Idx>, session: &Session) {
-    // Options to Optimize this step
-    // - Make the Values Tensors
-    // - Enable Shared Inputs (Cuts out on duplicate checks)
-    // - Leave as is, as end goal doesn't use Tensors
-    // unsafe {
-    //     total_calls += 1;
-    //     println!(
-    //         "dfs: {}/{}, nodes_len: {}",
-    //         total_not_contained,
-    //         total_calls,
-    //         nodes.len()
-    //     );
-    // }
-    //
-    let children = session.get_node(idx).get_input_nodes();
-    if !nodes.contains(idx) {
-        // unsafe {
-        //     total_not_contained += 1;
-        // }
-        if let Some(children) = children {
-            for child in children {
-                _dfs(&child, nodes, in_nodes, session);
+// TODO: Make IDX Sorted
+fn _ggh(
+    idx: Idx,
+    nodes: &mut HashMap<Idx, Operation>,
+    in_nodes: &mut Vec<Idx>,
+    gc_hashmap: &HashMap<Idx, Operation>,
+    idx_conv: &mut HashMap<Idx, Idx>,
+) {
+    // generate graph helper
+    if !idx_conv.contains_key(&idx) {
+        let operation = gc_hashmap[&idx].clone();
+        if let Some(children) = operation.get_input_nodes() {
+            if children.len() == 1 {
+                _ggh(children[0], nodes, in_nodes, gc_hashmap, idx_conv);
+            } else if children.len() == 2 {
+                _ggh(children[0], nodes, in_nodes, gc_hashmap, idx_conv);
+                _ggh(children[1], nodes, in_nodes, gc_hashmap, idx_conv);
             }
         } else {
-            in_nodes.insert(*idx);
+            // Add to in_nodes
+            in_nodes.push(nodes.len());
         }
-        nodes.insert(*idx);
+        idx_conv.insert(idx, nodes.len());
+        nodes.insert(nodes.len(), operation);
     }
 }
 
 impl Graph {
-    pub fn construct(out_node: Idx, session: &Session) -> Self {
-        let mut nodes: HashSet<Idx> = HashSet::new();
-        let mut in_nodes: HashSet<Idx> = HashSet::new();
+    pub fn generate(out_node: Idx, node_hashmap: &HashMap<Idx, Operation>) -> Self {
+        let mut nodes: HashMap<Idx, Operation> = HashMap::new();
+        let mut idx_conv: HashMap<Idx, Idx> = HashMap::new();
+        let mut in_nodes: Vec<Idx> = Vec::new();
+        _ggh(
+            out_node,
+            &mut nodes,
+            &mut in_nodes,
+            node_hashmap,
+            &mut idx_conv,
+        );
 
-        _dfs(&out_node, &mut nodes, &mut in_nodes, session);
+        for i in 0..nodes.len() {
+            nodes.get_mut(&i).unwrap().change_input_nodes_hs(&idx_conv);
+        }
 
-        let mut nodes: Vec<Idx> = nodes.iter().cloned().collect();
-        let mut in_nodes: Vec<Idx> = in_nodes.iter().cloned().collect();
-        nodes.sort();
-        in_nodes.sort();
+        // TODO: Obsolete
+        let mut keys_sorted = Vec::from_iter(nodes.keys().cloned());
+        keys_sorted.sort();
 
         Graph {
-            nodes,
-            out_node,
             in_nodes,
+            nodes,
+            keys_sorted,
+            out_node: idx_conv[&out_node],
         }
     }
 
-    pub fn evaluate(&self, current_values: &mut HashMap<Idx, bool>, session: &Session) -> bool {
-        for node in self.nodes.iter() {
-            if current_values.contains_key(node) {
-                continue;
+    pub fn evaluate(&self, feed_dict: &HashMap<Idx, bool>) -> bool {
+        let mut current_values = feed_dict.clone();
+        for i in self.keys_sorted.iter() {
+            let node = &self.nodes[i];
+            if !current_values.contains_key(i) {
+                let value = node.forward(&current_values);
+                current_values.insert(*i, value);
             }
-            let value = session.get_node(node).evaluate(current_values);
-            current_values.insert(*node, value);
         }
 
         current_values[&self.out_node]
     }
 
-    pub fn get_n_nodes(&self) -> usize {
+    pub fn is_solvable(&self) -> bool {
+        let mut feed_dict: HashMap<Idx, bool> = HashMap::new();
+        for i in 0..(2u32.pow(self.in_nodes.len() as u32)) {
+            let mut case = i;
+            self.in_nodes.iter().for_each(|x| {
+                feed_dict.insert(*x, case % 2 == 1);
+                case /= 2
+            });
+            if self.evaluate(&feed_dict) {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn solve_all_solutions(&self) -> Vec<HashMap<Idx, bool>> {
+        let mut feed_dict: HashMap<Idx, bool> = HashMap::new();
+        let mut all_solution: Vec<HashMap<Idx, bool>> = Vec::new();
+        for i in 0..(2u32.pow(self.in_nodes.len() as u32)) {
+            let mut case = i;
+            self.in_nodes.iter().for_each(|x| {
+                feed_dict.insert(*x, case % 2 == 1);
+                case /= 2
+            });
+            if self.evaluate(&feed_dict) {
+                all_solution.push(feed_dict.clone());
+            }
+        }
+        all_solution
+    }
+
+    pub fn len(&self) -> usize {
         self.nodes.len()
     }
 
-    pub fn get_output(&self) -> Idx {
-        self.out_node.clone()
-    }
-
-    pub fn get_inputs(&self) -> Vec<Idx> {
-        self.in_nodes.clone()
-    }
-
-    pub fn generate_variants(&self, session: &mut Session) -> Vec<Self> {
-        for i in 0..self.nodes.len() {
-            let this_node = session.get_node(&self.nodes[i]);
-            if find_idempotence(this_node) {
-                print!("Found Idempotence")
-            }
-        }
-        vec![]
-    }
+    
 }
 
-// find different Congruences
-fn find_idempotence(node: &Node) -> bool {
-    match node.get_operation() {
-        Operation::LAnd(a, b) | Operation::LOr(a, b) => a == b,
-        _ => false,
-    }
-}
-
-fn find_commutativity(node: &Node) -> bool {
-    match node.get_operation() {
-        Operation::LAnd(a, b) | Operation::LOr(a, b) => a == b,
-        _ => false,
-    }
-}
+mod variants;

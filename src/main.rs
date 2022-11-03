@@ -1,45 +1,35 @@
-use std::collections::HashMap;
-
-use logic_framework::{Graph, Idx, Session};
+use logic_framework::{Graph, GraphConstructor};
 
 fn main() {
-    let mut sess = Session::new();
-    let a = sess.input();
-    let b = sess.input();
+    let mut gc = GraphConstructor::new();
 
-    let out = sess.l_or(a, a);
-    let graph = Graph::construct(out, &sess);
-    graph.generate_variants(&mut sess);
-    // let mut feed_dict = HashMap::new();
-    // feed_dict.insert(a, false);
-    // feed_dict.insert(b, true);
+    let a = gc.input();
+    let b = gc.input();
+    let c = gc.input();
 
-    // let solutions = solve_graph(&graph, &mut sess);
-    // println!("Solutions: {:?}", solutions);
-}
+    let a_neg = gc.l_neg(a);
+    let b_neg = gc.l_neg(b);
 
-fn solve_graph(graph: &Graph, sess: &mut Session) -> Vec<HashMap<Idx, bool>> {
-    let inputs = graph.get_inputs();
-    let out = graph.get_output();
-    let mut solutions: Vec<HashMap<Idx, bool>> = Vec::new();
-    let mut feed_dict = HashMap::new();
-    let total_cases: usize = 2usize.pow(inputs.len() as u32);
-    (0..total_cases).for_each(|i| {
-        let mut case = i;
-        inputs.iter().for_each(|input| {
-            feed_dict.insert(*input, case % 2 == 1);
-            case /= 2;
-        });
-        sess.eval_graph(&graph, Some(feed_dict.clone()));
-        if sess.get_value(&out) {
-            solutions.push(feed_dict.clone());
-        }
-        sess.reset();
-    });
-    solutions
-}
+    let d = gc.l_or(a_neg, b_neg);
+    let e = gc.l_and(a_neg, d);
 
-fn is_tautology(graph: &Graph, sess: &mut Session) -> bool {
-    let inputs = graph.get_inputs();
-    solve_graph(graph, sess).len() == 2usize.pow(inputs.len() as u32)
+    let f = gc.l_and(a_neg, b_neg);
+    let g = gc.l_or(f, c);
+
+    let out = gc.l_and(e, g);
+
+    let graph = Graph::generate(out, &gc.get_hashmap());
+    let variants = graph.generate_variants(4);
+    let smallest_variant =
+        variants.iter().fold(
+            &graph,
+            |item, this| {
+                if this.len() > item.len() {
+                    item
+                } else {
+                    this
+                }
+            },
+        );
+    println!("{:?}", smallest_variant);
 }

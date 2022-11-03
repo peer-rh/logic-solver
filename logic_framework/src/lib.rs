@@ -1,11 +1,9 @@
 mod graph;
+mod graph_constructor;
 mod idx;
-mod node;
 mod operation;
-mod session;
 
 pub use graph::Graph;
+pub use graph_constructor::GraphConstructor;
 pub use idx::Idx;
-pub use node::Node;
 pub use operation::Operation;
-pub use session::Session;
