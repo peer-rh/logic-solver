@@ -42,10 +42,6 @@ impl Graph {
         all_solutions
     }
 
-    // 1 - Detect Pattern and Extract Variables
-    // 2 - Create new Variables with new pattern
-    // 3 - Change all Inputs to new Idx
-
     fn gen_helper(
         &self,
         old_idx: &Idx,
@@ -104,9 +100,9 @@ impl Graph {
         }
     }
 
-    fn gen_idempotence_expand(&self, idx: &Idx, nodes: &HashMap<Idx, Operation>) -> Option<Graph> {
-        todo!()
-    }
+    // fn gen_idempotence_expand(&self, idx: &Idx, nodes: &HashMap<Idx, Operation>) -> Option<Graph> {
+    //     todo!()
+    // }
 
     fn gen_commutativity(&self, idx: &Idx, nodes: &HashMap<Idx, Operation>) -> Option<Graph> {
         match nodes[idx] {
