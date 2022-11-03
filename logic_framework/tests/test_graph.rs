@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod test {
-    use logic_framework::{Graph, GraphConstructor, Operation};
+    use logic_framework::{gc_macros, Graph, GraphConstructor, Operation};
     use std::collections::HashMap;
 
     fn test_graph(graph: &Graph, final_graph: &Graph) {
@@ -11,12 +11,10 @@ mod test {
     #[test]
     fn test_absorbtion_or() {
         let mut gc = GraphConstructor::new();
+        gc_macros!(gc);
 
-        let a = gc.input();
-        let b = gc.input();
-
-        let c = gc.l_and(a, b);
-        let out = gc.l_or(a, c);
+        let a = l_input!();
+        let out = l_or!(a, l_and!(a, l_input!()));
 
         let mut graph = Graph::generate(out, &gc.get_hashmap());
         let graph_test = Graph::generate(0, &HashMap::from([(0, Operation::Input)]));
@@ -27,12 +25,10 @@ mod test {
     #[test]
     fn test_absorbtion_and() {
         let mut gc = GraphConstructor::new();
+        gc_macros!(gc);
 
-        let a = gc.input();
-        let b = gc.input();
-
-        let c = gc.l_or(a, b);
-        let out = gc.l_and(a, c);
+        let a = l_input!();
+        let out = l_and!(a, l_or!(a, l_input!()));
 
         let mut graph = Graph::generate(out, &gc.get_hashmap());
         let graph_test = Graph::generate(0, &HashMap::from([(0, Operation::Input)]));

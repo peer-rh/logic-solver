@@ -1,47 +1,72 @@
 use crate::{Graph, Idx, Operation};
 use std::collections::HashMap;
 
-macro_rules! add_to_solutions {
-    ($class:ident.$func:ident, $idx:expr, $all_solutions:ident) => {
-        if let Some(new_graph) = $class.$func($idx, &$class.nodes) {
-            $all_solutions.push(new_graph);
+macro_rules! add_to_solutions_constructor {
+    // TODO: Better method - Very Hacky
+    ($idx:expr, $all_solutions:ident) => {
+        macro_rules! add_to_solutions {
+            ($class:ident.$func:ident) => {
+                if let Some(new_graph) = $class.$func($idx, &$class.nodes) {
+                    if !$all_solutions.contains(&new_graph) {
+                        $all_solutions.push(new_graph);
+                    }
+                }
+            };
         }
     };
 }
 
 impl Graph {
     pub fn generate_variants(&self, levels: usize) -> Vec<Self> {
-        if levels == 0 {
-            return vec![];
+        let mut all_solutions = Vec::new();
+        self.generate_variants_helper(&mut all_solutions);
+
+        for _ in 1..levels {
+            let len = all_solutions.len();
+            let mut new_solutions = Vec::new();
+            for g in 0..len {
+                all_solutions[g].generate_variants_helper(&mut new_solutions);
+            }
+            all_solutions.append(&mut new_solutions);
+            println!("{}", all_solutions.len());
+
+            // filter variants
+            let min = all_solutions
+                .iter()
+                .fold(all_solutions[0].len(), |run_val, g| {
+                    if g.len() < run_val {
+                        g.len()
+                    } else {
+                        run_val
+                    }
+                });
+            // only keep algorithms with that length + 1
+            all_solutions = all_solutions
+                .into_iter()
+                .filter(|g| g.len() <= min + 2)
+                .collect();
         }
-        let mut all_solutions: Vec<Graph> = Vec::new();
-        let mut further_solutions: Vec<Graph> = Vec::new();
-
-        for i in self.keys_sorted.iter() {
-            // Problem if one idx inside of the changes gets referenced by another variable
-
-            add_to_solutions!(self.gen_absorbition, i, all_solutions);
-            add_to_solutions!(self.gen_idempotence, i, all_solutions);
-            add_to_solutions!(self.gen_commutativity, i, all_solutions);
-            add_to_solutions!(self.gen_associativity, i, all_solutions);
-            add_to_solutions!(self.gen_first_distributive_law_expand, i, all_solutions);
-            add_to_solutions!(self.gen_second_distributive_law_expand, i, all_solutions);
-            add_to_solutions!(self.gen_first_distributive_law_shrink, i, all_solutions);
-            add_to_solutions!(self.gen_second_distributive_law_shrink, i, all_solutions);
-            add_to_solutions!(self.gen_double_negation, i, all_solutions);
-            add_to_solutions!(self.gen_de_morgan_rule_expand, i, all_solutions);
-            add_to_solutions!(self.gen_de_morgan_rule_shrink, i, all_solutions);
-        }
-
-        all_solutions.iter().for_each(|x| {
-            let mut this_solutions = x.generate_variants(levels - 1);
-            further_solutions.append(&mut this_solutions)
-        });
-        all_solutions.append(&mut further_solutions);
-
         all_solutions
     }
 
+    pub fn generate_variants_helper(&self, all_solutions: &mut Vec<Graph>) {
+        for i in self.keys_sorted.iter() {
+            // Problem if one idx inside of the changes gets referenced by another variable
+            add_to_solutions_constructor!(i, all_solutions);
+
+            add_to_solutions!(self.gen_absorbition);
+            add_to_solutions!(self.gen_idempotence);
+            add_to_solutions!(self.gen_commutativity);
+            add_to_solutions!(self.gen_associativity);
+            add_to_solutions!(self.gen_first_distributive_law_expand);
+            add_to_solutions!(self.gen_second_distributive_law_expand);
+            add_to_solutions!(self.gen_first_distributive_law_shrink);
+            add_to_solutions!(self.gen_second_distributive_law_shrink);
+            add_to_solutions!(self.gen_double_negation);
+            add_to_solutions!(self.gen_de_morgan_rule_expand);
+            add_to_solutions!(self.gen_de_morgan_rule_shrink);
+        }
+    }
     fn gen_helper(
         &self,
         old_idx: &Idx,
@@ -65,7 +90,7 @@ impl Graph {
             Operation::And(a, b) => {
                 if let Operation::Or(c, _) = nodes[&b] {
                     if c == a {
-                        return Some(self.gen_helper(idx, a, &mut self.nodes.clone()));
+                        return Some(self.gen_helper(idx, a, &mut nodes.clone()));
                     }
                 }
                 None
@@ -73,7 +98,7 @@ impl Graph {
             Operation::Or(a, b) => {
                 if let Operation::And(c, _) = nodes[&b] {
                     if c == a {
-                        return Some(self.gen_helper(idx, a, &mut self.nodes.clone()));
+                        return Some(self.gen_helper(idx, a, &mut nodes.clone()));
                     }
                 }
                 None
@@ -86,23 +111,19 @@ impl Graph {
         match nodes[idx] {
             Operation::And(a, b) => {
                 if a == b {
-                    return Some(self.gen_helper(idx, a, &mut self.nodes.clone()));
+                    return Some(self.gen_helper(idx, a, &mut nodes.clone()));
                 }
                 None
             }
             Operation::Or(a, b) => {
                 if a == b {
-                    return Some(self.gen_helper(idx, a, &mut self.nodes.clone()));
+                    return Some(self.gen_helper(idx, a, &mut nodes.clone()));
                 }
                 None
             }
             _ => None,
         }
     }
-
-    // fn gen_idempotence_expand(&self, idx: &Idx, nodes: &HashMap<Idx, Operation>) -> Option<Graph> {
-    //     todo!()
-    // }
 
     fn gen_commutativity(&self, idx: &Idx, nodes: &HashMap<Idx, Operation>) -> Option<Graph> {
         match nodes[idx] {

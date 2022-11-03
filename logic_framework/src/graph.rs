@@ -115,8 +115,6 @@ impl Graph {
     pub fn len(&self) -> usize {
         self.nodes.len()
     }
-
-    
 }
 
 mod variants;
