@@ -17,6 +17,7 @@ macro_rules! add_to_solutions_constructor {
 }
 
 impl Graph {
+    // TODO Find duplicate code
     pub fn generate_variants(&self, levels: usize) -> Vec<Self> {
         let mut all_solutions = Vec::new();
         self.generate_variants_helper(&mut all_solutions);
@@ -40,10 +41,9 @@ impl Graph {
                         run_val
                     }
                 });
-            // only keep algorithms with that length + 1
             all_solutions = all_solutions
                 .into_iter()
-                .filter(|g| g.len() <= min + 2)
+                .filter(|g| g.len() <= min)
                 .collect();
         }
         all_solutions
@@ -76,13 +76,13 @@ impl Graph {
         for (_, node) in new_nodes.iter_mut() {
             node.change_input_nodes(*old_idx, new_idx)
         }
-        let new_out_node = if self.out_node == *old_idx {
-            new_idx
-        } else {
-            self.out_node
-        };
+        let new_out_nodes = self
+            .out_nodes
+            .iter()
+            .map(|on| if on == old_idx { new_idx } else { *on })
+            .collect();
 
-        return Graph::generate(new_out_node, &new_nodes);
+        return Graph::generate(new_out_nodes, &new_nodes);
     }
 
     fn gen_absorbition(&self, idx: &Idx, nodes: &HashMap<Idx, Operation>) -> Option<Graph> {
@@ -130,14 +130,12 @@ impl Graph {
             Operation::And(a, b) => {
                 let mut new_nodes = nodes.clone();
                 new_nodes.insert(*idx, Operation::And(b, a));
-
-                return Some(Graph::generate(self.out_node, &new_nodes));
+                return Some(self.gen_helper(idx, *idx, &mut new_nodes));
             }
             Operation::Or(a, b) => {
                 let mut new_nodes = nodes.clone();
                 new_nodes.insert(*idx, Operation::Or(b, a));
-
-                return Some(Graph::generate(self.out_node, &new_nodes));
+                return Some(self.gen_helper(idx, *idx, &mut new_nodes));
             }
             _ => None,
         }

@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod test {
-    use logic_framework::{gc_macros, Graph, GraphConstructor, Operation};
+    use logic_framework::{Graph, GraphConstructor, Operation};
     use std::collections::HashMap;
 
     fn test_graph(graph: &Graph, final_graph: &Graph) {
@@ -11,13 +11,15 @@ mod test {
     #[test]
     fn test_absorbtion_or() {
         let mut gc = GraphConstructor::new();
-        gc_macros!(gc);
 
-        let a = l_input!();
-        let out = l_or!(a, l_and!(a, l_input!()));
+        let a = gc.input();
+        let b = gc.input();
 
-        let mut graph = Graph::generate(vec![out], &gc.get_hashmap());
-        let graph_test = Graph::generate(vec![0], &HashMap::from([(0, Operation::Input)]));
+        let c = gc.l_and(a, b);
+        let out = gc.l_or(a, c);
+
+        let mut graph = Graph::generate(out, &gc.get_hashmap());
+        let graph_test = Graph::generate(0, &HashMap::from([(0, Operation::Input)]));
 
         test_graph(&graph, &graph_test);
     }
@@ -25,13 +27,15 @@ mod test {
     #[test]
     fn test_absorbtion_and() {
         let mut gc = GraphConstructor::new();
-        gc_macros!(gc);
 
-        let a = l_input!();
-        let out = l_and!(a, l_or!(a, l_input!()));
+        let a = gc.input();
+        let b = gc.input();
 
-        let mut graph = Graph::generate(vec![out], &gc.get_hashmap());
-        let graph_test = Graph::generate(vec![0], &HashMap::from([(0, Operation::Input)]));
+        let c = gc.l_or(a, b);
+        let out = gc.l_and(a, c);
+
+        let mut graph = Graph::generate(out, &gc.get_hashmap());
+        let graph_test = Graph::generate(0, &HashMap::from([(0, Operation::Input)]));
 
         test_graph(&graph, &graph_test);
     }
@@ -44,8 +48,8 @@ mod test {
 
         let out = gc.l_or(a, a);
 
-        let mut graph = Graph::generate(vec![out], &gc.get_hashmap());
-        let graph_test = Graph::generate(vec![0], &HashMap::from([(0, Operation::Input)]));
+        let mut graph = Graph::generate(out, &gc.get_hashmap());
+        let graph_test = Graph::generate(0, &HashMap::from([(0, Operation::Input)]));
 
         test_graph(&graph, &graph_test);
     }
@@ -58,8 +62,8 @@ mod test {
 
         let out = gc.l_and(a, a);
 
-        let mut graph = Graph::generate(vec![out], &gc.get_hashmap());
-        let graph_test = Graph::generate(vec![0], &HashMap::from([(0, Operation::Input)]));
+        let mut graph = Graph::generate(out, &gc.get_hashmap());
+        let graph_test = Graph::generate(0, &HashMap::from([(0, Operation::Input)]));
 
         test_graph(&graph, &graph_test);
     }
@@ -73,9 +77,9 @@ mod test {
 
         let out = gc.l_and(a, b);
 
-        let mut graph = Graph::generate(vec![out], &gc.get_hashmap());
+        let mut graph = Graph::generate(out, &gc.get_hashmap());
         let graph_test = Graph::generate(
-            vec![2],
+            2,
             &HashMap::from([
                 (0, Operation::Input),
                 (1, Operation::Input),
@@ -95,9 +99,9 @@ mod test {
 
         let out = gc.l_or(a, b);
 
-        let mut graph = Graph::generate(vec![out], &gc.get_hashmap());
+        let mut graph = Graph::generate(out, &gc.get_hashmap());
         let graph_test = Graph::generate(
-            vec![2],
+            2,
             &HashMap::from([
                 (0, Operation::Input),
                 (1, Operation::Input),
@@ -119,9 +123,9 @@ mod test {
         let d = gc.l_or(b, c);
         let out = gc.l_or(a, d);
 
-        let mut graph = Graph::generate(vec![out], &gc.get_hashmap());
+        let mut graph = Graph::generate(out, &gc.get_hashmap());
         let graph_test = Graph::generate(
-            vec![4],
+            4,
             &HashMap::from([
                 (0, Operation::Input),
                 (1, Operation::Input),
@@ -145,9 +149,9 @@ mod test {
         let d = gc.l_and(b, c);
         let out = gc.l_and(a, d);
 
-        let mut graph = Graph::generate(vec![out], &gc.get_hashmap());
+        let mut graph = Graph::generate(out, &gc.get_hashmap());
         let graph_test = Graph::generate(
-            vec![4],
+            4,
             &HashMap::from([
                 (0, Operation::Input),
                 (1, Operation::Input),
@@ -172,9 +176,9 @@ mod test {
         let e = gc.l_and(a, c);
         let out = gc.l_or(d, e);
 
-        let mut graph = Graph::generate(vec![out], &gc.get_hashmap());
+        let mut graph = Graph::generate(out, &gc.get_hashmap());
         let graph_test = Graph::generate(
-            vec![4],
+            4,
             &HashMap::from([
                 (0, Operation::Input),
                 (1, Operation::Input),
@@ -198,9 +202,9 @@ mod test {
         let e = gc.l_or(a, c);
         let out = gc.l_and(d, e);
 
-        let mut graph = Graph::generate(vec![out], &gc.get_hashmap());
+        let mut graph = Graph::generate(out, &gc.get_hashmap());
         let graph_test = Graph::generate(
-            vec![4],
+            4,
             &HashMap::from([
                 (0, Operation::Input),
                 (1, Operation::Input),
@@ -224,9 +228,9 @@ mod test {
         let d = gc.l_or(b, c);
         let out = gc.l_and(a, d);
 
-        let mut graph = Graph::generate(vec![out], &gc.get_hashmap());
+        let mut graph = Graph::generate(out, &gc.get_hashmap());
         let graph_test = Graph::generate(
-            vec![5],
+            5,
             &HashMap::from([
                 (0, Operation::Input),
                 (1, Operation::Input),
@@ -251,9 +255,9 @@ mod test {
         let d = gc.l_and(b, c);
         let out = gc.l_or(a, d);
 
-        let mut graph = Graph::generate(vec![out], &gc.get_hashmap());
+        let mut graph = Graph::generate(out, &gc.get_hashmap());
         let graph_test = Graph::generate(
-            vec![5],
+            5,
             &HashMap::from([
                 (0, Operation::Input),
                 (1, Operation::Input),
@@ -276,8 +280,8 @@ mod test {
         let out = gc.l_neg(a);
         let out = gc.l_neg(out);
 
-        let mut graph = Graph::generate(vec![out], &gc.get_hashmap());
-        let graph_test = Graph::generate(vec![0], &HashMap::from([(0, Operation::Input)]));
+        let mut graph = Graph::generate(out, &gc.get_hashmap());
+        let graph_test = Graph::generate(0, &HashMap::from([(0, Operation::Input)]));
 
         test_graph(&graph, &graph_test);
     }

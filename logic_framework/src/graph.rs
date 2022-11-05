@@ -9,7 +9,7 @@ pub struct Graph {
     in_nodes: Vec<Idx>,
     nodes: HashMap<Idx, Operation>,
     keys_sorted: Vec<Idx>,
-    out_node: Idx,
+    out_nodes: Vec<Idx>,
 }
 
 // TODO: Make IDX Sorted
@@ -40,17 +40,22 @@ fn _ggh(
 }
 
 impl Graph {
-    pub fn generate(out_node: Idx, node_hashmap: &HashMap<Idx, Operation>) -> Self {
+    pub fn generate(out_nodes: Vec<Idx>, node_hashmap: &HashMap<Idx, Operation>) -> Self {
         let mut nodes: HashMap<Idx, Operation> = HashMap::new();
         let mut idx_conv: HashMap<Idx, Idx> = HashMap::new();
         let mut in_nodes: Vec<Idx> = Vec::new();
-        _ggh(
-            out_node,
-            &mut nodes,
-            &mut in_nodes,
-            node_hashmap,
-            &mut idx_conv,
-        );
+
+        for out_node in out_nodes.iter() {
+            if !idx_conv.contains_key(&out_node) {
+                _ggh(
+                    *out_node,
+                    &mut nodes,
+                    &mut in_nodes,
+                    node_hashmap,
+                    &mut idx_conv,
+                );
+            }
+        }
 
         for i in 0..nodes.len() {
             nodes.get_mut(&i).unwrap().change_input_nodes_hs(&idx_conv);
@@ -64,11 +69,11 @@ impl Graph {
             in_nodes,
             nodes,
             keys_sorted,
-            out_node: idx_conv[&out_node],
+            out_nodes: out_nodes.iter().map(|on| idx_conv[on]).collect(),
         }
     }
 
-    pub fn evaluate(&self, feed_dict: &HashMap<Idx, bool>) -> bool {
+    pub fn evaluate(&self, feed_dict: &HashMap<Idx, bool>) -> Vec<bool> {
         let mut current_values = feed_dict.clone();
         for i in self.keys_sorted.iter() {
             let node = &self.nodes[i];
@@ -77,11 +82,11 @@ impl Graph {
                 current_values.insert(*i, value);
             }
         }
-
-        current_values[&self.out_node]
+        self.out_nodes.iter().map(|on| current_values[on]).collect()
     }
 
-    pub fn is_solvable(&self) -> bool {
+    pub fn is_solvable(&self, wanted_solution: Vec<bool>) -> bool {
+        // Checks if there is a way where all values equal one
         let mut feed_dict: HashMap<Idx, bool> = HashMap::new();
         for i in 0..(2u32.pow(self.in_nodes.len() as u32)) {
             let mut case = i;
@@ -89,14 +94,14 @@ impl Graph {
                 feed_dict.insert(*x, case % 2 == 1);
                 case /= 2
             });
-            if self.evaluate(&feed_dict) {
+            if self.evaluate(&feed_dict) == wanted_solution {
                 return true;
             }
         }
         false
     }
 
-    pub fn solve_all_solutions(&self) -> Vec<HashMap<Idx, bool>> {
+    pub fn solve_all_solutions(&self, wanted_solution: Vec<bool>) -> Vec<HashMap<Idx, bool>> {
         let mut feed_dict: HashMap<Idx, bool> = HashMap::new();
         let mut all_solution: Vec<HashMap<Idx, bool>> = Vec::new();
         for i in 0..(2u32.pow(self.in_nodes.len() as u32)) {
@@ -105,7 +110,7 @@ impl Graph {
                 feed_dict.insert(*x, case % 2 == 1);
                 case /= 2
             });
-            if self.evaluate(&feed_dict) {
+            if self.evaluate(&feed_dict) == wanted_solution {
                 all_solution.push(feed_dict.clone());
             }
         }
