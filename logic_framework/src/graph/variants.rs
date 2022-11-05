@@ -195,6 +195,42 @@ impl Graph {
         }
     }
 
+    fn gen_constants(&self, idx: &Idx, nodes: &HashMap<Idx, Operation>) -> Option<Graph> {
+        match nodes[idx] {
+            Operation::And(a, b) => {
+                if let Operation::CTrue = nodes[&b] {
+                    return Some(self.gen_helper(idx, a, &mut nodes.clone()));
+                } else if let Operation::CFalse = nodes[&b] {
+                    return Some(self.gen_helper(idx, b, &mut nodes.clone()));
+                } else if let Operation::Neg(c) = nodes[&b] {
+                    if a == c {
+                        let mut new_nodes = nodes.clone();
+                        new_nodes.insert(new_nodes.len(), Operation::CFalse);
+
+                        return Some(self.gen_helper(idx, new_nodes.len() - 1, &mut new_nodes));
+                    }
+                }
+                None
+            }
+            Operation::Or(a, b) => {
+                if let Operation::CTrue = nodes[&b] {
+                    return Some(self.gen_helper(idx, b, &mut nodes.clone()));
+                } else if let Operation::CFalse = nodes[&b] {
+                    return Some(self.gen_helper(idx, a, &mut nodes.clone()));
+                } else if let Operation::Neg(c) = nodes[&b] {
+                    if a == c {
+                        let mut new_nodes = nodes.clone();
+                        new_nodes.insert(new_nodes.len(), Operation::CTrue);
+
+                        return Some(self.gen_helper(idx, new_nodes.len() - 1, &mut new_nodes));
+                    }
+                }
+                None
+            }
+            _ => None,
+        }
+    }
+
     fn gen_second_distributive_law_shrink(
         &self,
         idx: &Idx,

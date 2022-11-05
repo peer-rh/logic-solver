@@ -8,6 +8,8 @@ pub enum Operation {
     And(Idx, Idx),
     Or(Idx, Idx),
     Neg(Idx),
+    CTrue,
+    CFalse,
 }
 
 impl Operation {
@@ -17,6 +19,8 @@ impl Operation {
             Self::Or(a, b) => current_values[a] || current_values[b],
             Self::Neg(a) => !current_values[a],
             Self::Input => false, // Placeholder will not be called if initialized
+            Self::CTrue => true,
+            Self::CFalse => false,
         }
     }
 
