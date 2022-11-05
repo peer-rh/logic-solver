@@ -12,7 +12,6 @@ pub struct Graph {
     out_nodes: Vec<Idx>,
 }
 
-// TODO: Make IDX Sorted
 fn _ggh(
     idx: Idx,
     nodes: &mut HashMap<Idx, Operation>,
