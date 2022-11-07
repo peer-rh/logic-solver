@@ -255,8 +255,49 @@ impl VariantGenerator {
             all_solutions.append(&mut rule.match_with_node(idx, &graph.nodes, &graph.out_nodes));
         }
 
-        // TODO: Detect Duplicates
+        all_solutions = all_solutions.iter().map(|g| find_duplicates(g)).collect();
 
         all_solutions
     }
+}
+fn find_duplicates(graph: &Graph) -> Graph {
+    let mut new_nodes = graph.nodes.clone();
+    let mut new_out_nodes = graph.out_nodes.clone();
+    let mut found = true;
+    while found {
+        // Check if duplicate exists
+        if let Some(matches) = _find_d_i(&new_nodes) {
+            for (i, j) in matches {
+                new_nodes.remove(&j);
+
+                for (_, node) in new_nodes.iter_mut() {
+                    node.change_input_nodes(j, i)
+                }
+
+                new_out_nodes = new_out_nodes
+                    .iter()
+                    .map(|on| if on == &j { i } else { *on })
+                    .collect();
+            }
+        } else {
+            found = false;
+        }
+    }
+    Graph::generate(new_out_nodes, &new_nodes)
+}
+fn _find_d_i(nodes: &HashMap<Idx, Operation>) -> Option<Vec<(usize, usize)>> {
+    for i in 0..(nodes.len() - 1) {
+        if nodes[&i] != Operation::Input {
+            let mut matches = Vec::new();
+            nodes.iter().for_each(|(j, x)| {
+                if i != *j && *x == nodes[&i] {
+                    matches.push((i, *j))
+                }
+            });
+            if matches.len() > 0 {
+                return Some(matches);
+            }
+        }
+    }
+    None
 }

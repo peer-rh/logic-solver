@@ -286,4 +286,29 @@ mod test {
     // TODO: Test De Morgans Expand And
     // TODO: Test De Morgans Shrink Or
     // TODO: Test De Morgans Shrink And
+
+    #[test]
+    fn test_duplicate() {
+        let mut gc = GraphConstructor::new();
+
+        let a = gc.input();
+        let b = gc.input();
+
+        let c = gc.l_and(a, b);
+        let d = gc.l_and(a, b);
+        let out = gc.l_and(c, d);
+
+        let mut graph = Graph::generate(vec![out], &gc.get_hashmap());
+        let graph_test = Graph::generate(
+            vec![3],
+            &HashMap::from([
+                (0, Operation::Input),
+                (1, Operation::Input),
+                (2, Operation::And(0, 1)),
+                (3, Operation::And(2, 2)),
+            ]),
+        );
+
+        test_graph(&graph, &graph_test);
+    }
 }
