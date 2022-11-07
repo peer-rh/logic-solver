@@ -10,7 +10,7 @@ fn main() {
     let out = l_or!(l_and!(a, b), l_and!(a, c));
 
     let graph = Graph::generate(vec![out], &gc.get_hashmap());
-    let variants = graph.generate_variants(12);
+    let variants = graph.generate_variants(1);
     let smallest_variant =
         variants.iter().fold(
             &graph,

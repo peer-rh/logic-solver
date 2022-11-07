@@ -134,7 +134,6 @@ impl Graph {
                 all_solutions[g].generate_variants_helper(&mut new_solutions, &vg);
             }
             all_solutions.append(&mut new_solutions);
-            println!("{}", all_solutions.len());
 
             // filter variants
             let min = all_solutions
