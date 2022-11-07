@@ -10,7 +10,6 @@ use self::variants::VariantGenerator;
 pub struct Graph {
     in_nodes: Vec<Idx>,
     nodes: HashMap<Idx, Operation>,
-    keys_sorted: Vec<Idx>,
     out_nodes: Vec<Idx>,
 }
 
@@ -62,25 +61,20 @@ impl Graph {
             nodes.get_mut(&i).unwrap().change_input_nodes_hs(&idx_conv);
         }
 
-        // TODO: Obsolete
-        let mut keys_sorted = Vec::from_iter(nodes.keys().cloned());
-        keys_sorted.sort();
-
         Graph {
             in_nodes,
             nodes,
-            keys_sorted,
             out_nodes: out_nodes.iter().map(|on| idx_conv[on]).collect(),
         }
     }
 
     pub fn evaluate(&self, feed_dict: &HashMap<Idx, bool>) -> Vec<bool> {
         let mut current_values = feed_dict.clone();
-        for i in self.keys_sorted.iter() {
-            let node = &self.nodes[i];
-            if !current_values.contains_key(i) {
+        for i in 0..self.nodes.len() {
+            let node = &self.nodes[&i];
+            if !current_values.contains_key(&i) {
                 let value = node.forward(&current_values);
-                current_values.insert(*i, value);
+                current_values.insert(i, value);
             }
         }
         self.out_nodes.iter().map(|on| current_values[on]).collect()
@@ -158,9 +152,9 @@ impl Graph {
         all_solutions: &mut Vec<Graph>,
         variant_generator: &VariantGenerator,
     ) {
-        for i in self.keys_sorted.iter() {
+        for i in 0..self.nodes.len() {
             // Problem if one idx inside of the changes gets referenced by another variable
-            all_solutions.append(&mut variant_generator.apply(*i, &self));
+            all_solutions.append(&mut variant_generator.apply(i, &self));
         }
     }
 }

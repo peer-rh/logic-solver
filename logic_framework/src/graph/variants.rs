@@ -255,6 +255,8 @@ impl VariantGenerator {
             all_solutions.append(&mut rule.match_with_node(idx, &graph.nodes, &graph.out_nodes));
         }
 
+        // TODO: Detect Duplicates
+
         all_solutions
     }
 }
