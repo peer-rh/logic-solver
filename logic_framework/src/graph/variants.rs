@@ -1,4 +1,4 @@
-use crate::{Graph, Idx, Operation};
+use crate::{graph::match_nodes::NodeMatcher, Graph, Idx, Operation};
 use std::collections::HashMap;
 
 macro_rules! add_to_solutions_constructor {
@@ -63,6 +63,7 @@ impl Graph {
             add_to_solutions!(self.gen_first_distributive_law_shrink);
             add_to_solutions!(self.gen_second_distributive_law_shrink);
             add_to_solutions!(self.gen_double_negation);
+            add_to_solutions!(self.gen_constants);
             add_to_solutions!(self.gen_de_morgan_rule_expand);
             add_to_solutions!(self.gen_de_morgan_rule_shrink);
         }
@@ -86,87 +87,120 @@ impl Graph {
     }
 
     fn gen_absorbition(&self, idx: &Idx, nodes: &HashMap<Idx, Operation>) -> Option<Graph> {
-        match nodes[idx] {
-            Operation::And(a, b) => {
-                if let Operation::Or(c, _) = nodes[&b] {
-                    if c == a {
-                        return Some(self.gen_helper(idx, a, &mut nodes.clone()));
-                    }
-                }
-                None
-            }
-            Operation::Or(a, b) => {
-                if let Operation::And(c, _) = nodes[&b] {
-                    if c == a {
-                        return Some(self.gen_helper(idx, a, &mut nodes.clone()));
-                    }
-                }
-                None
-            }
-            _ => None,
+        let match_n = NodeMatcher::new(
+            HashMap::from([
+                (0, Operation::Input),
+                (1, Operation::Input),
+                (2, Operation::And(0, 1)),
+                (3, Operation::Or(0, 2)),
+            ]),
+            HashMap::from([(0, Operation::Input)]),
+        );
+
+        if let Some(out) = match_n.match_with_node(*idx, nodes, &self.out_nodes) {
+            return Some(out);
+        } else {
+            let match_n = NodeMatcher::new(
+                HashMap::from([
+                    (0, Operation::Input),
+                    (1, Operation::Input),
+                    (2, Operation::Or(0, 1)),
+                    (3, Operation::And(0, 2)),
+                ]),
+                HashMap::from([(0, Operation::Input)]),
+            );
+            return match_n.match_with_node(*idx, nodes, &self.out_nodes);
         }
     }
 
     fn gen_idempotence(&self, idx: &Idx, nodes: &HashMap<Idx, Operation>) -> Option<Graph> {
-        match nodes[idx] {
-            Operation::And(a, b) => {
-                if a == b {
-                    return Some(self.gen_helper(idx, a, &mut nodes.clone()));
-                }
-                None
-            }
-            Operation::Or(a, b) => {
-                if a == b {
-                    return Some(self.gen_helper(idx, a, &mut nodes.clone()));
-                }
-                None
-            }
-            _ => None,
+        let match_n = NodeMatcher::new(
+            HashMap::from([(0, Operation::Input), (1, Operation::And(0, 0))]),
+            HashMap::from([(0, Operation::Input)]),
+        );
+
+        if let Some(out) = match_n.match_with_node(*idx, nodes, &self.out_nodes) {
+            return Some(out);
+        } else {
+            let match_n = NodeMatcher::new(
+                HashMap::from([(0, Operation::Input), (1, Operation::Or(0, 0))]),
+                HashMap::from([(0, Operation::Input)]),
+            );
+            return match_n.match_with_node(*idx, nodes, &self.out_nodes);
         }
     }
 
     fn gen_commutativity(&self, idx: &Idx, nodes: &HashMap<Idx, Operation>) -> Option<Graph> {
-        match nodes[idx] {
-            Operation::And(a, b) => {
-                let mut new_nodes = nodes.clone();
-                new_nodes.insert(*idx, Operation::And(b, a));
-                return Some(self.gen_helper(idx, *idx, &mut new_nodes));
-            }
-            Operation::Or(a, b) => {
-                let mut new_nodes = nodes.clone();
-                new_nodes.insert(*idx, Operation::Or(b, a));
-                return Some(self.gen_helper(idx, *idx, &mut new_nodes));
-            }
-            _ => None,
+        let match_n = NodeMatcher::new(
+            HashMap::from([
+                (0, Operation::Input),
+                (1, Operation::Input),
+                (2, Operation::And(0, 1)),
+            ]),
+            HashMap::from([
+                (0, Operation::Input),
+                (1, Operation::Input),
+                (2, Operation::And(1, 0)),
+            ]),
+        );
+
+        if let Some(out) = match_n.match_with_node(*idx, nodes, &self.out_nodes) {
+            return Some(out);
+        } else {
+            let match_n = NodeMatcher::new(
+                HashMap::from([
+                    (0, Operation::Input),
+                    (1, Operation::Input),
+                    (2, Operation::Or(0, 1)),
+                ]),
+                HashMap::from([
+                    (0, Operation::Input),
+                    (1, Operation::Input),
+                    (2, Operation::Or(1, 0)),
+                ]),
+            );
+            return match_n.match_with_node(*idx, nodes, &self.out_nodes);
         }
     }
 
     fn gen_associativity(&self, idx: &Idx, nodes: &HashMap<Idx, Operation>) -> Option<Graph> {
-        match nodes[idx] {
-            Operation::And(a, b) => {
-                if let Operation::And(c, d) = nodes[&b] {
-                    // a and (b and c) -> (a and b) and c
-                    let mut new_nodes = nodes.clone();
-                    let new_idx = new_nodes.len() - 1;
-                    new_nodes.insert(new_idx + 1, Operation::And(a, c));
-                    new_nodes.insert(new_idx + 2, Operation::And(new_idx + 1, d));
+        let match_n = NodeMatcher::new(
+            HashMap::from([
+                (0, Operation::Input),
+                (1, Operation::Input),
+                (2, Operation::Input),
+                (3, Operation::And(1, 2)),
+                (4, Operation::And(0, 3)),
+            ]),
+            HashMap::from([
+                (0, Operation::Input),
+                (1, Operation::Input),
+                (2, Operation::Input),
+                (3, Operation::And(0, 1)),
+                (4, Operation::And(3, 2)),
+            ]),
+        );
 
-                    return Some(self.gen_helper(idx, new_idx + 2, &mut new_nodes));
-                }
-                None
-            }
-            Operation::Or(a, b) => {
-                if let Operation::Or(c, d) = nodes[&b] {
-                    // a and (b and c) -> (a and b) and c
-                    let mut new_nodes = nodes.clone();
-                    let new_idx = new_nodes.len() - 1;
-                    new_nodes.insert(new_idx + 1, Operation::Or(a, c));
-                    new_nodes.insert(new_idx + 2, Operation::Or(new_idx + 1, d));
-                    return Some(self.gen_helper(idx, new_idx + 2, &mut new_nodes));
-                }
-                None
-            }
-            _ => None,
+        if let Some(out) = match_n.match_with_node(*idx, nodes, &self.out_nodes) {
+            return Some(out);
+        } else {
+            let match_n = NodeMatcher::new(
+                HashMap::from([
+                    (0, Operation::Input),
+                    (1, Operation::Input),
+                    (2, Operation::Input),
+                    (3, Operation::Or(1, 2)),
+                    (4, Operation::Or(0, 3)),
+                ]),
+                HashMap::from([
+                    (0, Operation::Input),
+                    (1, Operation::Input),
+                    (2, Operation::Input),
+                    (3, Operation::Or(0, 1)),
+                    (4, Operation::Or(3, 2)),
+                ]),
+            );
+            return match_n.match_with_node(*idx, nodes, &self.out_nodes);
         }
     }
 
@@ -175,24 +209,25 @@ impl Graph {
         idx: &Idx,
         nodes: &HashMap<Idx, Operation>,
     ) -> Option<Graph> {
-        match nodes[idx] {
-            Operation::Or(a, b) => {
-                if let Operation::And(c, d) = nodes[&a] {
-                    if let Operation::And(e, f) = nodes[&b] {
-                        if c == e {
-                            // Change all references to idx to a
-                            let mut new_nodes = nodes.clone();
-                            let new_idx = *new_nodes.keys().max().unwrap();
-                            new_nodes.insert(new_idx + 1, Operation::Or(d, f));
-                            new_nodes.insert(new_idx + 2, Operation::And(c, new_idx + 1));
-                            return Some(self.gen_helper(idx, new_idx + 2, &mut new_nodes));
-                        }
-                    }
-                }
-                None
-            }
-            _ => None,
-        }
+        let match_n = NodeMatcher::new(
+            HashMap::from([
+                (0, Operation::Input),
+                (1, Operation::Input),
+                (2, Operation::Input),
+                (3, Operation::And(0, 1)),
+                (4, Operation::And(0, 2)),
+                (5, Operation::Or(3, 4)),
+            ]),
+            HashMap::from([
+                (0, Operation::Input),
+                (1, Operation::Input),
+                (2, Operation::Input),
+                (3, Operation::Or(1, 2)),
+                (4, Operation::And(0, 3)),
+            ]),
+        );
+
+        match_n.match_with_node(*idx, nodes, &self.out_nodes)
     }
 
     fn gen_constants(&self, idx: &Idx, nodes: &HashMap<Idx, Operation>) -> Option<Graph> {
@@ -236,24 +271,25 @@ impl Graph {
         idx: &Idx,
         nodes: &HashMap<Idx, Operation>,
     ) -> Option<Graph> {
-        match nodes[idx] {
-            Operation::And(a, b) => {
-                if let Operation::Or(c, d) = nodes[&a] {
-                    if let Operation::Or(e, f) = nodes[&b] {
-                        if c == e {
-                            // Change all references to idx to a
-                            let mut new_nodes = nodes.clone();
-                            let new_idx = *new_nodes.keys().max().unwrap();
-                            new_nodes.insert(new_idx + 1, Operation::And(d, f));
-                            new_nodes.insert(new_idx + 2, Operation::Or(c, new_idx + 1));
-                            return Some(self.gen_helper(idx, new_idx + 2, &mut new_nodes));
-                        }
-                    }
-                }
-                None
-            }
-            _ => None,
-        }
+        let match_n = NodeMatcher::new(
+            HashMap::from([
+                (0, Operation::Input),
+                (1, Operation::Input),
+                (2, Operation::Input),
+                (3, Operation::Or(0, 1)),
+                (4, Operation::Or(0, 2)),
+                (5, Operation::And(3, 4)),
+            ]),
+            HashMap::from([
+                (0, Operation::Input),
+                (1, Operation::Input),
+                (2, Operation::Input),
+                (3, Operation::And(1, 2)),
+                (4, Operation::Or(0, 3)),
+            ]),
+        );
+
+        match_n.match_with_node(*idx, nodes, &self.out_nodes)
     }
 
     fn gen_first_distributive_law_expand(
@@ -261,23 +297,25 @@ impl Graph {
         idx: &Idx,
         nodes: &HashMap<Idx, Operation>,
     ) -> Option<Graph> {
-        match nodes[idx] {
-            Operation::And(a, b) => {
-                if let Operation::Or(c, d) = nodes[&b] {
-                    // Change all references to idx to a
-                    let mut new_nodes = nodes.clone();
-                    let new_idx = *new_nodes.keys().max().unwrap();
-                    new_nodes.insert(new_idx + 1, Operation::And(a, c));
-                    new_nodes.insert(new_idx + 2, Operation::And(a, d));
-                    new_nodes.insert(new_idx + 3, Operation::Or(new_idx + 1, new_idx + 2));
+        let match_n = NodeMatcher::new(
+            HashMap::from([
+                (0, Operation::Input),
+                (1, Operation::Input),
+                (2, Operation::Input),
+                (3, Operation::And(1, 2)),
+                (4, Operation::Or(0, 3)),
+            ]),
+            HashMap::from([
+                (0, Operation::Input),
+                (1, Operation::Input),
+                (2, Operation::Input),
+                (3, Operation::Or(0, 1)),
+                (4, Operation::Or(0, 2)),
+                (5, Operation::And(3, 4)),
+            ]),
+        );
 
-                    return Some(self.gen_helper(idx, new_idx + 3, &mut new_nodes));
-                }
-
-                None
-            }
-            _ => None,
-        }
+        match_n.match_with_node(*idx, nodes, &self.out_nodes)
     }
 
     fn gen_second_distributive_law_expand(
@@ -285,38 +323,38 @@ impl Graph {
         idx: &Idx,
         nodes: &HashMap<Idx, Operation>,
     ) -> Option<Graph> {
-        match nodes[idx] {
-            Operation::Or(a, b) => {
-                if let Operation::And(c, d) = nodes[&b] {
-                    // Change all references to idx to a
-                    let mut new_nodes = nodes.clone();
-                    let new_idx = *new_nodes.keys().max().unwrap();
-                    new_nodes.insert(new_idx + 1, Operation::Or(a, c));
-                    new_nodes.insert(new_idx + 2, Operation::Or(a, d));
-                    new_nodes.insert(new_idx + 3, Operation::And(new_idx + 1, new_idx + 2));
+        let match_n = NodeMatcher::new(
+            HashMap::from([
+                (0, Operation::Input),
+                (1, Operation::Input),
+                (2, Operation::Input),
+                (3, Operation::Or(1, 2)),
+                (4, Operation::And(0, 3)),
+            ]),
+            HashMap::from([
+                (0, Operation::Input),
+                (1, Operation::Input),
+                (2, Operation::Input),
+                (3, Operation::And(0, 1)),
+                (4, Operation::And(0, 2)),
+                (5, Operation::Or(3, 4)),
+            ]),
+        );
 
-                    return Some(self.gen_helper(idx, new_idx + 3, &mut new_nodes));
-                }
-
-                None
-            }
-            _ => None,
-        }
+        match_n.match_with_node(*idx, nodes, &self.out_nodes)
     }
 
     fn gen_double_negation(&self, idx: &Idx, nodes: &HashMap<Idx, Operation>) -> Option<Graph> {
-        match nodes[idx] {
-            Operation::Neg(a) => {
-                if let Operation::Neg(b) = nodes[&a] {
-                    let mut new_nodes = nodes.clone();
-                    return Some(self.gen_helper(idx, b, &mut new_nodes));
-                }
+        let match_n = NodeMatcher::new(
+            HashMap::from([
+                (0, Operation::Input),
+                (1, Operation::Neg(0)),
+                (2, Operation::Neg(1)),
+            ]),
+            HashMap::from([(0, Operation::Input)]),
+        );
 
-                None
-            }
-
-            _ => None,
-        }
+        match_n.match_with_node(*idx, nodes, &self.out_nodes)
     }
 
     fn gen_de_morgan_rule_expand(
