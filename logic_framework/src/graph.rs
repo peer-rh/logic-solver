@@ -139,9 +139,10 @@ impl Graph {
                         run_val
                     }
                 });
+            // TODO: better path finding algorithm
             all_solutions = all_solutions
                 .into_iter()
-                .filter(|g| g.len() <= min)
+                .filter(|g| g.len() <= min + 1)
                 .collect();
         }
         all_solutions

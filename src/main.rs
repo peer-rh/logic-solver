@@ -6,13 +6,14 @@ fn main() {
 
     let a = gc.input();
     let b = gc.input();
+    let c = gc.input();
 
-    let c = gc.l_and(a, b);
-    let d = gc.l_and(a, b);
-    let out = gc.l_and(c, d);
+    let e = l_and!(l_or!(l_neg!(a), l_neg!(b)), l_neg!(a));
+    let d = l_or!(l_and!(l_neg!(b), l_neg!(a)), c);
+    let f = l_and!(e, d);
 
-    let graph = Graph::generate(vec![out], &gc.get_hashmap());
-    let variants = graph.generate_variants(1);
+    let graph = Graph::generate(vec![f], &gc.get_hashmap());
+    let variants = graph.generate_variants(8);
     let smallest_variant =
         variants.iter().fold(
             &graph,
@@ -29,5 +30,5 @@ fn main() {
         graph.len(),
         smallest_variant.len()
     );
-    // println!("{:?}", smallest_variant);
+    println!("{:?}", smallest_variant);
 }

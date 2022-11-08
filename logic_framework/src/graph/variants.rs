@@ -287,7 +287,7 @@ fn find_duplicates(graph: &Graph) -> Graph {
 }
 fn _find_d_i(nodes: &HashMap<Idx, Operation>) -> Option<Vec<(usize, usize)>> {
     for i in 0..(nodes.len() - 1) {
-        if nodes[&i] != Operation::Input {
+        if nodes.contains_key(&i) && nodes[&i] != Operation::Input {
             let mut matches = Vec::new();
             nodes.iter().for_each(|(j, x)| {
                 if i != *j && *x == nodes[&i] {
