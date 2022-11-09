@@ -7,5 +7,8 @@ Using Logical Equivalence to refactor logical statements
 
 ## Ideas
 
-- Represent As Heap Structure to Make parallel computing easier
-- Implement find duplicates to make code easier
+- Make Multi Threaded
+- Add find strategies
+  - Only keep best
+  - Bruteforce
+  - Natural Selection
