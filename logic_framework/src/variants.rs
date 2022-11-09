@@ -1,5 +1,9 @@
-use crate::{graph::match_nodes::NodeMatcher, Graph, Idx, Operation};
+mod match_nodes;
+
+use crate::{Graph, Idx, Operation};
 use std::collections::HashMap;
+
+use self::match_nodes::NodeMatcher;
 
 pub struct VariantGenerator {
     different_rules: Vec<NodeMatcher>,

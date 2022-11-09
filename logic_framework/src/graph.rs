@@ -3,14 +3,12 @@ use std::collections::HashMap;
 use crate::Idx;
 use crate::Operation;
 
-use self::variants::VariantGenerator;
-
 #[derive(Debug, PartialEq, Eq)]
 
 pub struct Graph {
-    in_nodes: Vec<Idx>,
-    nodes: HashMap<Idx, Operation>,
-    out_nodes: Vec<Idx>,
+    pub in_nodes: Vec<Idx>,
+    pub nodes: HashMap<Idx, Operation>,
+    pub out_nodes: Vec<Idx>,
 }
 
 fn _ggh(
@@ -115,50 +113,4 @@ impl Graph {
     pub fn len(&self) -> usize {
         self.nodes.len()
     }
-
-    pub fn generate_variants(&self, levels: usize) -> Vec<Self> {
-        let mut all_solutions = Vec::new();
-        let vg = VariantGenerator::new();
-        self.generate_variants_helper(&mut all_solutions, &vg);
-
-        for _ in 1..levels {
-            let len = all_solutions.len();
-            let mut new_solutions = Vec::new();
-            for g in 0..len {
-                all_solutions[g].generate_variants_helper(&mut new_solutions, &vg);
-            }
-            all_solutions.append(&mut new_solutions);
-
-            // filter variants
-            let min = all_solutions
-                .iter()
-                .fold(all_solutions[0].len(), |run_val, g| {
-                    if g.len() < run_val {
-                        g.len()
-                    } else {
-                        run_val
-                    }
-                });
-            // TODO: better path finding algorithm
-            all_solutions = all_solutions
-                .into_iter()
-                .filter(|g| g.len() <= min + 1)
-                .collect();
-        }
-        all_solutions
-    }
-
-    pub fn generate_variants_helper(
-        &self,
-        all_solutions: &mut Vec<Graph>,
-        variant_generator: &VariantGenerator,
-    ) {
-        for i in 0..self.nodes.len() {
-            // Problem if one idx inside of the changes gets referenced by another variable
-            all_solutions.append(&mut variant_generator.apply(i, &self));
-        }
-    }
 }
-
-mod match_nodes;
-mod variants;

@@ -1,4 +1,6 @@
-use logic_framework::{gc_macros, Graph, GraphConstructor};
+use logic_framework::{
+    gc_macros, BruteforceStrategy, GenerationStrategy, Graph, GraphConstructor, OnlyKeepBest,
+};
 
 fn main() {
     let mut gc = GraphConstructor::new();
@@ -17,7 +19,8 @@ fn main() {
     let out = l_and!(f, j);
 
     let graph = Graph::generate(vec![out], &gc.get_hashmap());
-    let variants = graph.generate_variants(8);
+    let variant_generator = OnlyKeepBest::new(9, 1);
+    let variants = variant_generator.generate(&graph);
     let smallest_variant =
         variants.iter().fold(
             &graph,
