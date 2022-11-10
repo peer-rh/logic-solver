@@ -1,25 +1,13 @@
-use logic_framework::{
-    gc_macros, BruteforceStrategy, GenerationStrategy, Graph, GraphConstructor, OnlyKeepBest,
-};
+use logic_framework::{GenerationStrategy, Graph, OnlyKeepBest, StringConverter};
 
 fn main() {
-    let mut gc = GraphConstructor::new();
-    gc_macros!(gc);
+    let mut sc = StringConverter::new();
 
-    let a = gc.input();
-    let b = gc.input();
-    let c = gc.input();
+    let out = sc.convert("!(AAAA || (B && C))").unwrap();
 
-    let e = l_and!(l_or!(l_neg!(a), l_neg!(b)), l_neg!(a));
-    let d = l_or!(l_and!(l_neg!(b), l_neg!(a)), c);
-    let f = l_and!(e, d);
-    let g = l_and!(l_or!(l_neg!(a), l_neg!(b)), l_neg!(a));
-    let h = l_or!(l_and!(l_neg!(b), l_neg!(a)), c);
-    let j = l_and!(g, h);
-    let out = l_and!(f, j);
-
-    let graph = Graph::generate(vec![out], &gc.get_hashmap());
-    let variant_generator = OnlyKeepBest::new(9, 1);
+    let graph = Graph::generate(vec![out], &sc.get_hashmap());
+    println!("{:?}", graph);
+    let variant_generator = OnlyKeepBest::new(2, 1);
     let variants = variant_generator.generate(&graph);
     let smallest_variant =
         variants.iter().fold(
